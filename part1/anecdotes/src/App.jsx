@@ -14,32 +14,30 @@ function App() {
 		"The only way to go fast, is to go well.",
 	];
 
-	const voteArray = new Uint8Array(anecdotes.length);
-
 	const [selected, setSelected] = useState(0);
-	const [votes, setVotes] = useState(voteArray);
+	const [mostVotes, setMostVotes] = useState(0);
+
+	// better way to create an array of 0s with the size of anecdotes
+	const [votes, setVotes] = useState(anecdotes.map((_) => 0));
 
 	const handleNext = () => {
-		if (selected == anecdotes.length - 1) {
-			setSelected(0);
-			return;
-		}
-		setSelected(selected + 1);
+		let possibleNext;
+		do {
+			possibleNext = Math.floor(Math.random() * anecdotes.length);
+		} while (possibleNext === selected);
+
+		setSelected(possibleNext);
 	};
 
 	const handleVote = () => {
-		const copy = [...votes];
-		copy[selected] += 1;
-		setVotes(copy);
-	};
+		const newVotes = [...votes];
+		newVotes[selected] += 1;
+		setVotes(newVotes);
 
-	const findMostVoted = () => {
-		const mostVotedValue = Math.max(...votes);
-
-		if (mostVotedValue === 0) return;
-
-		const mostVotedIndex = votes.findIndex((item) => item === mostVotedValue);
-		return anecdotes[mostVotedIndex];
+		// better way to find the most votes
+		if (newVotes[selected] > votes[mostVotes]) {
+			setMostVotes(selected);
+		}
 	};
 
 	return (
@@ -51,7 +49,7 @@ function App() {
 			<button onClick={handleNext}>next anecdote</button>
 
 			<h1>Anecdote with most votes</h1>
-			<p>{findMostVoted()}</p>
+			<p>{anecdotes[mostVotes]}</p>
 		</>
 	);
 }
