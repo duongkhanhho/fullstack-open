@@ -5,12 +5,14 @@ import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import PeopleList from "./components/PeopleList";
 import peopleService from "./services/people";
+import Notification from "./components/Notification";
 
 function App() {
 	const [people, setPeople] = useState([]);
 	const [newName, setNewName] = useState("");
 	const [newNumber, setNewNumber] = useState("");
 	const [searchValue, setSearchValue] = useState("");
+	const [notification, setNotification] = useState(null);
 
 	const peopleToShow = searchValue
 		? people.filter((person) => {
@@ -44,6 +46,14 @@ function App() {
 								person.id === updatedPerson.id ? updatedPerson : person
 							)
 						);
+
+						setNotification({
+							type: "success",
+							message: `Updated ${newPerson.name}'s number`,
+						});
+						setTimeout(() => {
+							setNotification(null);
+						}, 5000);
 					});
 			}
 			return;
@@ -51,6 +61,13 @@ function App() {
 
 		peopleService.create(newPerson).then((returnedPerson) => {
 			setPeople(people.concat(returnedPerson));
+			setNotification({
+				type: "success",
+				message: `Added ${newPerson.name}`,
+			});
+			setTimeout(() => {
+				setNotification(null);
+			}, 5000);
 		});
 	};
 
@@ -68,11 +85,21 @@ function App() {
 
 	const handleDelete = (id, name) => {
 		if (confirm(`Delete ${name}?`)) {
-			console.log("confirmed");
-			peopleService.deletePerson(id).then(() => {
-				console.log("deleted");
-				setPeople(people.filter((person) => person.id !== id));
-			});
+			peopleService
+				.deletePerson(id)
+				.then(() => {
+					setPeople(people.filter((person) => person.id !== id));
+				})
+				.catch((err) => {
+					setNotification({
+						type: "error",
+						message: `Information of ${name} has already been removed from server`,
+					});
+					setTimeout(() => {
+						setNotification(null);
+					}, 5000);
+					setPeople(people.filter((person) => person.id !== id));
+				});
 		}
 	};
 
@@ -87,6 +114,7 @@ function App() {
 	return (
 		<div>
 			<h2>Phonebook</h2>
+			<Notification message={notification?.message} type={notification?.type} />
 			<Filter searchValue={searchValue} handleSearch={handleSearch} />
 
 			<h3>add a new</h3>
