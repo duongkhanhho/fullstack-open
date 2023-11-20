@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import PeopleList from "./components/PeopleList";
-import axios from "axios";
+import peopleService from "./services/people";
 
 function App() {
 	const [people, setPeople] = useState([]);
@@ -26,12 +26,32 @@ function App() {
 			id: people.length + 1,
 		};
 		setNewName("");
+		setNewNumber("");
 
-		if (people.map((person) => person.name).includes(newName)) {
-			alert(`${newName} is already added to phonebook`);
+		const existingPerson = people.find((person) => person.name === newName);
+
+		if (existingPerson) {
+			if (
+				confirm(
+					`${newName} is already added to phonebook, replace old number with new one?`
+				)
+			) {
+				peopleService
+					.updateNumber(existingPerson.id, newPerson)
+					.then((updatedPerson) => {
+						setPeople(
+							people.map((person) =>
+								person.id === updatedPerson.id ? updatedPerson : person
+							)
+						);
+					});
+			}
 			return;
 		}
-		setPeople(people.concat(newPerson));
+
+		peopleService.create(newPerson).then((returnedPerson) => {
+			setPeople(people.concat(returnedPerson));
+		});
 	};
 
 	const handleChangeName = (event) => {
@@ -46,10 +66,22 @@ function App() {
 		setSearchValue(event.target.value);
 	};
 
+	const handleDelete = (id, name) => {
+		if (confirm(`Delete ${name}?`)) {
+			console.log("confirmed");
+			peopleService.deletePerson(id).then(() => {
+				console.log("deleted");
+				setPeople(people.filter((person) => person.id !== id));
+			});
+		}
+	};
+
 	useEffect(() => {
-		axios.get("http://localhost:3001/persons").then((response) => {
-			setPeople(response.data);
-		});
+		peopleService
+			.getAll("http://localhost:3001/persons")
+			.then((initialData) => {
+				setPeople(initialData);
+			});
 	}, []);
 
 	return (
@@ -67,7 +99,7 @@ function App() {
 			/>
 
 			<h3>Numbers</h3>
-			<PeopleList peopleToShow={peopleToShow} />
+			<PeopleList peopleToShow={peopleToShow} handleDelete={handleDelete} />
 		</div>
 	);
 }
